@@ -1,6 +1,6 @@
 ---
 title: "Data formats"
-author: ""
+author: "Yasemin Kurtis"
 format:
   html:
     embed-resources: true
@@ -24,12 +24,14 @@ The required packages for this homework exercise have already been added.
 library(tidyverse)
 ```
 
+Tidyverse Package is a system of packages used in data science for data manipulation, exploration and visualization.
+
 ## Task 2: Import data
 
 1.  Use the `read_csv()` (**Note**: Watch out for the `_` and don't use the `.` as in `read.csv()`) function to import the "msw-generation-and-composition-by-income.csv" data from the `data` directory and assign it to an object with the name `waste_data`.
 
 ```{r}
-
+waste_data <- read_csv("data/msw-generation-and-composition-by-income.csv")
 ```
 
 ## Task 3: Vector coercion
@@ -45,6 +47,14 @@ library(tidyverse)
 5.  Render and fix any errors
 
 ```{r}
+frequency_table <- waste_data |>
+  count(income_cat)
+print(frequency_table)
+levels_income_cat <- c("high income", "upper-middle income", "lower-middle income", "low income")
+waste_data <- waste_data |>
+  mutate(income_cat = factor(income_cat, levels = levels_income_cat))
+waste_data_fct <- waste_data
+
 
 ```
 
@@ -63,6 +73,13 @@ library(tidyverse)
 4.  Render and fix any errors
 
 ```{r}
+waste_data_long <- waste_data_fct |>
+  pivot_longer(
+    cols = food_organic_waste:yard_garden_green_waste, 
+    names_to = "waste_category", 
+    values_to = "percent"
+  ) |>
+  filter(!is.na(percent))
 
 ```
 
@@ -85,6 +102,9 @@ waste_data_long <- read_rds("data/msw-generation-and-composition-by-income-long.
 2.  Assign the created data frame to an object with the name `waste_data_long_mean`.
 
 ```{r}
+waste_data_long_mean <- waste_data_long |>
+  group_by(income_cat, waste_category) |>
+  summarise(mean_percent = mean(percent))
 
 ```
 
@@ -93,8 +113,10 @@ waste_data_long <- read_rds("data/msw-generation-and-composition-by-income-long.
 1.  Starting with the `waste_data_long_mean` object, execute the code and observe the output in the Console. Would you publish this table in this format in a report?
 
 ```{r}
-
+print(waste_data_long_mean)
 ```
+
+1.  Long format is readable but may not be the best for comparison as it lists data in a single column.
 
 ## Task 4: From long to wide
 
@@ -105,8 +127,16 @@ waste_data_long <- read_rds("data/msw-generation-and-composition-by-income-long.
 3.  Render and fix any errors
 
 ```{r}
+waste_data_wide <- waste_data_long_mean |>
+  pivot_wider(
+    names_from = waste_category, 
+    values_from = mean_percent
+  )
 
+print(waste_data_wide)
 ```
+
+Wide format tables are generally easier readable and give a better overview for comparing different variables side by side and are therefore preferable for reports.
 
 # Part 3: Data visualization
 
@@ -131,7 +161,24 @@ waste_data_long_mean <- read_rds("data/msw-generation-and-composition-by-income-
 **Note:** The size of the plot will be different. That is alright and does not need to match.
 
 ```{r}
+library(ggplot2)
 
+ggplot(waste_data_long_mean, aes(x = waste_category, y = mean_percent, fill = income_cat)) + 
+  geom_bar(stat = "identity", position = position_dodge(), width = 0.7) +
+  coord_flip() + 
+  labs(
+    title = "Waste Composition",
+    subtitle = "Mean percentages of nine waste categories displayed by income categories",
+    y = "Waste category",
+    x = "Mean percentage",
+    fill = "Income category"
+  ) +
+  scale_fill_brewer(palette = "colorblind") +
+  theme_minimal()+
+  theme(legend.position = "right") 
+
+#https://stackoverflow.com/questions/26183958/ggplot-flip-and-transform-coordinate
+#https://ggplot2.tidyverse.org/reference/ggtheme.html
 
 ```
 
